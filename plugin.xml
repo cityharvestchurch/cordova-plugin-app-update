@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        id="cordova-plugin-app-update-checker"
+        version="1.0.0">
+
+    <name>AppUpdateChecker</name>
+    <description>
+        Force/flexible update checks that talk directly to Google Play (Android, via
+        the Play Core library) and Apple's public iTunes Lookup API (iOS). No
+        app-owned backend is involved, so this keeps working even if your own
+        API (OutSystems, SSL pinning, etc.) is unreachable.
+    </description>
+    <license>Apache-2.0</license>
+    <keywords>cordova,app-update,play-core,force-update</keywords>
+
+    <js-module src="www/AppUpdateChecker.js" name="AppUpdateChecker">
+        <clobbers target="cordova.plugins.AppUpdateChecker" />
+    </js-module>
+
+    <!-- ANDROID -->
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="AppUpdateChecker">
+                <param name="android-package" value="com.cityharvestchurch.chcapp.appupdate.AppUpdateChecker" />
+            </feature>
+        </config-file>
+
+        <!-- Play Core "In-App Updates" API -->
+        <framework src="com.google.android.play:app-update:2.1.0" />
+        <framework src="com.google.android.play:app-update-ktx:2.1.0" />
+
+        <source-file src="src/android/AppUpdateChecker.java"
+                     target-dir="src/com/cityharvestchurch/chcapp/appupdate" />
+    </platform>
+
+    <!-- IOS -->
+    <platform name="ios">
+        <config-file target="config.xml" parent="/*">
+            <feature name="AppUpdateChecker">
+                <param name="ios-package" value="AppUpdateChecker" />
+                <param name="onload" value="true" />
+            </feature>
+        </config-file>
+
+        <source-file src="src/ios/AppUpdateChecker.swift" />
+    </platform>
+
+</plugin>

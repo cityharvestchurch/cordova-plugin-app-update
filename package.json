@@ -1,0 +1,11 @@
+{
+  "name": "cordova-plugin-app-update-checker",
+  "version": "1.0.0",
+  "description": "Store-native (Play Core / iTunes Lookup) update checks and force-update flows, independent of any app-owned backend.",
+  "cordova": {
+    "id": "cordova-plugin-app-update-checker",
+    "platforms": ["android", "ios"]
+  },
+  "keywords": ["cordova", "app-update", "play-core", "force-update"],
+  "license": "Apache-2.0"
+}
