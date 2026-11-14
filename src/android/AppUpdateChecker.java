@@ -15,7 +15,6 @@ import com.google.android.play.core.install.model.UpdateAvailability;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
-import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -31,27 +30,25 @@ public class AppUpdateChecker extends CordovaPlugin {
     private static final int REQUEST_CODE_UPDATE = 8471;
 
     private AppUpdateManager appUpdateManager;
-    private CallbackContext flexibleListenerCallback;
     private CallbackContext pendingImmediateCallback;
 
+    // Cached by the listener below; read synchronously by getFlexibleUpdateStatus.
+    // Polling instead of pushing sidesteps the fact that OutSystems Client
+    // Actions are request/response, not repeat-fire callbacks.
+    private volatile int lastKnownInstallStatus = InstallStatus.UNKNOWN;
+    private volatile long lastKnownBytesDownloaded = 0;
+    private volatile long lastKnownTotalBytesToDownload = 0;
+
     private final InstallStateUpdatedListener installStateListener = state -> {
-        if (flexibleListenerCallback == null) return;
-        try {
-            JSONObject payload = new JSONObject();
-            payload.put("installStatus", installStatusName(state.installStatus()));
-            payload.put("bytesDownloaded", state.bytesDownloaded());
-            payload.put("totalBytesToDownload", state.totalBytesToDownload());
-            PluginResult result = new PluginResult(PluginResult.Status.OK, payload);
-            result.setKeepCallback(true);
-            flexibleListenerCallback.sendPluginResult(result);
-        } catch (JSONException e) {
-            Log.e(TAG, "Failed to serialize install state", e);
-        }
+        lastKnownInstallStatus = state.installStatus();
+        lastKnownBytesDownloaded = state.bytesDownloaded();
+        lastKnownTotalBytesToDownload = state.totalBytesToDownload();
     };
 
     @Override
     protected void pluginInitialize() {
         appUpdateManager = AppUpdateManagerFactory.create(cordova.getContext());
+        appUpdateManager.registerListener(installStateListener);
     }
 
     @Override
@@ -70,9 +67,8 @@ public class AppUpdateChecker extends CordovaPlugin {
                 appUpdateManager.completeUpdate();
                 callbackContext.success();
                 return true;
-            case "registerListener":
-                flexibleListenerCallback = callbackContext;
-                appUpdateManager.registerListener(installStateListener);
+            case "getFlexibleUpdateStatus":
+                getFlexibleUpdateStatus(callbackContext);
                 return true;
             case "openStoreListing":
                 openStoreListing(callbackContext);
@@ -102,6 +98,18 @@ public class AppUpdateChecker extends CordovaPlugin {
             }
         }).addOnFailureListener(e ->
                 callbackContext.error("Play Core check failed: " + e.getMessage()));
+    }
+
+    private void getFlexibleUpdateStatus(CallbackContext callbackContext) {
+        try {
+            JSONObject payload = new JSONObject();
+            payload.put("installStatus", installStatusName(lastKnownInstallStatus));
+            payload.put("bytesDownloaded", lastKnownBytesDownloaded);
+            payload.put("totalBytesToDownload", lastKnownTotalBytesToDownload);
+            callbackContext.success(payload);
+        } catch (JSONException e) {
+            callbackContext.error("Failed to read cached install state: " + e.getMessage());
+        }
     }
 
     private void startUpdate(int updateType, CallbackContext callbackContext) {

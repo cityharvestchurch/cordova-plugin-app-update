@@ -33,15 +33,25 @@ document.addEventListener('deviceready', function () {
       if (info.immediateAllowed) {
         cordova.plugins.AppUpdateChecker.startImmediateUpdate(
           function () { /* update flow completed / app will restart */ },
-          function (err) { console.error('Immediate update failed:', err); }
+          function (err) {
+            // Immediate flow itself failed to launch - fall back to the
+            // store listing so the user still has something actionable.
+            console.error('Immediate update failed:', err);
+            cordova.plugins.AppUpdateChecker.openStoreListing(function () {}, console.error);
+          }
         );
       } else if (info.flexibleAllowed) {
         cordova.plugins.AppUpdateChecker.startFlexibleUpdate(function () {}, console.error);
-        cordova.plugins.AppUpdateChecker.onFlexibleUpdateStateChange(function (state) {
-          if (state.installStatus === 'DOWNLOADED') {
-            cordova.plugins.AppUpdateChecker.completeFlexibleUpdate(function () {}, console.error);
-          }
-        });
+        // Poll instead of subscribing to a push listener - matches the
+        // request/response shape OutSystems Client Actions expect.
+        var pollHandle = setInterval(function () {
+          cordova.plugins.AppUpdateChecker.getFlexibleUpdateStatus(function (state) {
+            if (state.installStatus === 'DOWNLOADED') {
+              clearInterval(pollHandle);
+              cordova.plugins.AppUpdateChecker.completeFlexibleUpdate(function () {}, console.error);
+            }
+          }, console.error);
+        }, 2500);
       }
     } else {
       // iOS: show your own blocking modal, then send them to the store.
