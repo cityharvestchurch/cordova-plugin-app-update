@@ -51,11 +51,16 @@ var AppUpdateChecker = {
   },
 
   /**
-   * Android only. Registers a listener that fires on download/install state
-   * changes for a flexible update.
+   * Android only. Reads the current download/install state for an in-progress
+   * flexible update. Call this on an interval (e.g. every 2-3s) while a
+   * flexible update is downloading, and call completeFlexibleUpdate() once
+   * installStatus is 'DOWNLOADED'.
+   *
+   * Resolves with:
+   * { installStatus: String, bytesDownloaded: Number, totalBytesToDownload: Number }
    */
-  onFlexibleUpdateStateChange: function (callback) {
-    exec(callback, null, PLUGIN_NAME, 'registerListener', []);
+  getFlexibleUpdateStatus: function (success, error) {
+    exec(success, error, PLUGIN_NAME, 'getFlexibleUpdateStatus', []);
   },
 
   /**

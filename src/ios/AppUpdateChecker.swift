@@ -129,8 +129,8 @@ class AppUpdateChecker: CDVPlugin {
         startImmediateUpdate(command: command)
     }
 
-    @objc(registerListener:)
-    func registerListener(command: CDVInvokedUrlCommand) {
+    @objc(getFlexibleUpdateStatus:)
+    func getFlexibleUpdateStatus(command: CDVInvokedUrlCommand) {
         startImmediateUpdate(command: command)
     }
 
